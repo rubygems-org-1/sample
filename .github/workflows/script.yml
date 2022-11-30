@@ -1,0 +1,41 @@
+
+name: Script Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  packages: read
+  contents: read
+  
+jobs:
+    test:
+      name: Ruby Test
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v2
+      - name: Set up Ruby 2.6
+        uses: actions/setup-ruby@v1
+        with:
+          version: 3.3.11
+      - name: Setup Gemrc
+        run: |
+          mkdir -p $HOME/.gem
+          touch $HOME/.gem/credentials
+          chmod 0600 $HOME/.gem/credentials
+          printf -- "---\n:github: ${GEM_HOST_API_KEY}\n" > $HOME/.gem/credentials
+        env:
+          GEM_HOST_API_KEY: "Bearer ${{secrets.GITHUB_TOKEN}}"
+      - name: List Gem Dependencies
+        continue-on-error: true
+        run: |
+           gem dependency gem --source "https://rubygems.pkg.github.com/rubygems-v2-lab/"
+      - name: Spec Script
+        run: |
+         gem install zlib
+         gem install httpclient
+         gem install stringio
+         chmod +x ./spec.rb
+         ruby ./spec.rb 
+        env:
+          TOKEN: "Bearer ${{secrets.GITHUB_TOKEN}}"
