@@ -51,11 +51,11 @@ jobs:
     - name: Install gem 
       continue-on-error: true
       run: |
-        gem install ruby-test  --version "1.0.0"  -s "https://rubygems.pkg.github.com/${{github.repository_owner}}/"
+        gem install ruby-test-v2  --version "1.0.0"  -s "https://rubygems.pkg.github.com/${{github.repository_owner}}/"
     - name: Install public package
       continue-on-error: true
       run: |
-        gem install ruby-test  --version "1.0.0"  -s "https://rubygems.pkg.github.com/${{github.repository_owner}}/"
+        gem install ruby-test-v2  --version "1.0.0"  -s "https://rubygems.pkg.github.com/${{github.repository_owner}}/"
         
     - name: Install gem without permission 
       continue-on-error: true
