@@ -1,0 +1,92 @@
+name: Ruby Gem
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  
+permissions:
+  packages: write
+  contents: read 
+  
+jobs:
+  build:
+    name: Ruby V2 Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Ruby 2.6
+      uses: actions/setup-ruby@v1
+      with:
+        version: 3.3.11
+
+    - name: Publish to GPR
+      continue-on-error: true
+      run: |
+        mkdir -p $HOME/.gem
+        touch $HOME/.gem/credentials
+        chmod 0600 $HOME/.gem/credentials
+        printf -- "---\n:github: ${GEM_HOST_API_KEY}\n" > $HOME/.gem/credentials
+        gem build *.gemspec
+        gem push --KEY github --host https://rubygems.pkg.github.com/${OWNER} *.gem
+      env:
+        GEM_HOST_API_KEY: "Bearer ${{secrets.GITHUB_TOKEN}}"
+        OWNER: ${{github.repository_owner}}
+
+    - name: Add ~/.gemrc
+      continue-on-error: true
+      run: |
+        cat > ~/.gemrc << EOM
+        ---
+        :backtrace: false
+        :bulk_threshold: 1000
+        :sources:
+        - https://rubygems.org/
+        - https://token:${{secrets.GITHUB_TOKEN}}@rubygems.pkg.github.com/${{github.repository_owner}}/
+        :update_sources: true
+        :verbose: true  
+        EOM
+    - name: Install gem 
+      continue-on-error: true
+      run: |
+        gem install ruby-test  --version "1.0.0"  -s "https://rubygems.pkg.github.com/${{github.repository_owner}}/"
+    - name: Install public package
+      continue-on-error: true
+      run: |
+        gem install ruby-test  --version "1.0.0"  -s "https://rubygems.pkg.github.com/${{github.repository_owner}}/"
+        
+    - name: Install gem without permission 
+      continue-on-error: true
+      run: |
+        gem install gem_v2_13  --version "1.0.0"  -s "https://rubygems.pkg.github.com/${{github.repository_owner}}/"
+    
+    - name: List Gem Dependencies
+      continue-on-error: true
+      run: |
+        gem dependency ruby --source "https://rubygems.pkg.github.com/${{github.repository_owner}}/"
+    
+    - name: Install required gems
+      run: |
+        gem install zlib
+        gem install httpclient
+        gem install stringio
+        
+    - name: Run Marshal Script
+      run: |
+       chmod +x ./marshal_handler.rb
+       ruby ./marshal_handler.rb 
+      env:
+        TOKEN: "Bearer ${{secrets.GITHUB_TOKEN}}"
+        ORG: "rubymigrationtest"
+        PKG: "ruby-test"
+        VERSION: "1.0.0"
+        
+    - name: Run Gem Spec Script
+      run: |
+       chmod +x ./spec_handler.rb
+       ruby ./spec_handler.rb 
+      env:
+        TOKEN: "Bearer ${{secrets.GITHUB_TOKEN}}"
+        ORG: "rubymigrationtest"
